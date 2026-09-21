@@ -1,0 +1,4 @@
+# .gitignore
+faith-builder-cli
+*.exe
+.config/
