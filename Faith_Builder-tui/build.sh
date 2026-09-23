@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Output directory
 OUTPUT_DIR="build"
-VERSION="v1.0.0"
+
+# Automatically grab the latest Git tag. If no tags exist or git fails, fall back to "dev"
+VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 
 # Platforms to build for (Format: OS/ARCH)
 PLATFORMS=(
@@ -17,24 +18,21 @@ PLATFORMS=(
 rm -rf ${OUTPUT_DIR}
 mkdir -p ${OUTPUT_DIR}
 
-echo "Building Faith Builder CLI for multiple platforms..."
+echo "Building Faith Builder CLI (${VERSION}) for multiple platforms..."
 
 for PLATFORM in "${PLATFORMS[@]}"; do
-    # Split platform string into OS and Architecture
     GOOS=${PLATFORM%/*}
     GOARCH=${PLATFORM#*/}
 
-    # Set output file name
     OUTPUT_NAME="${OUTPUT_DIR}/fb-${GOOS}-${GOARCH}"
     
-    # Add .exe extension for Windows
     if [ "$GOOS" = "windows" ]; then
         OUTPUT_NAME="${OUTPUT_NAME}.exe"
     fi
 
     echo "Compiling for $GOOS/$GOARCH..."
     
-    # Run the Go compiler with the target OS and Arch
+    # Inject the dynamic Git version tag into main.Version
     GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="-s -w -X main.Version=${VERSION}" -o $OUTPUT_NAME main.go
 
     if [ $? -ne 0 ]; then

@@ -1,4 +1,9 @@
-# .gitignore
+# Compiled binaries
+build/
 faith-builder-cli
-*.exe
-.config/
+faith-builder-cli.exe
+fb-*
+
+# OS generated files
+.DS_Store
+EOT
