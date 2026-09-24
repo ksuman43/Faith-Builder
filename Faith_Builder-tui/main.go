@@ -115,6 +115,10 @@ type saveResultMsg struct {
 	err error
 }
 
+type bookmarkResultMsg struct {
+	err error
+}
+
 // --- Config Helpers ---
 func getConfigDir() string {
 	home, err := os.UserHomeDir()
@@ -312,6 +316,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+		case tea.KeyCtrlB:
+			if m.mode == modeSearch && !m.searchInput.Focused() {
+				if item, ok := m.resultsList.SelectedItem().(Verse); ok {
+					m.loading = true
+					m.err = nil
+					return m, saveBookmark(m.authToken, item.Reference, item.Text)
+				}
+			}
+
 		case tea.KeyRunes:
 			char := msg.String()
 			if m.mode == modeSearch && !m.searchInput.Focused() {
@@ -438,6 +451,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = modeSearch
 		m.bodyInput.Blur()
 		m.searchInput.Focus()
+		return m, nil
+
+	case bookmarkResultMsg:
+		m.loading = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		m.successMsg = "Verse bookmarked successfully!"
 		return m, nil
 	}
 
@@ -614,6 +636,28 @@ func saveMaterial(token, title, body string) tea.Cmd {
 	}
 }
 
+func saveBookmark(token, reference, text string) tea.Cmd {
+	return func() tea.Msg {
+		payload, _ := json.Marshal(map[string]string{
+			"reference": reference,
+			"text":      text,
+		})
+
+		req, _ := http.NewRequest("POST", "http://127.0.0.1:8090/api/collections/bookmarks/records", bytes.NewBuffer(payload))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", token)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil || resp.StatusCode != 200 {
+			return bookmarkResultMsg{err: fmt.Errorf("failed to save bookmark (check if collection exists)")}
+		}
+		defer resp.Body.Close()
+
+		return bookmarkResultMsg{err: nil}
+	}
+}
+
 // --- View Rendering ---
 func (m model) View() string {
 	s := titleStyle.Render("Faith Builder CLI") + "\n"
@@ -650,7 +694,7 @@ func (m model) View() string {
 		if m.searchInput.Focused() {
 			s += helpStyle.Render("\ntab: Focus List • m: Materials • up/down: Scroll • enter: Search • esc: Quit")
 		} else {
-			s += helpStyle.Render("\ntab: Blank • m: Materials • x: Cross-Refs • enter: Draft Verse • esc: Quit")
+			s += helpStyle.Render("\ntab: Blank • m: Materials • x: Cross-Refs • ctrl+b: Bookmark • enter: Draft Verse • esc: Quit")
 		}
 
 	case modeMaterials:
