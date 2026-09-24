@@ -31,6 +31,7 @@ var (
 	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
 	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Bold(true)
 	helpStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("240")).MarginTop(1)
+	contentBox   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("63")).Padding(1, 2)
 )
 
 // --- Data Structures ---
@@ -44,8 +45,41 @@ func (v Verse) Title() string       { return v.Reference }
 func (v Verse) Description() string { return v.Text }
 func (v Verse) FilterValue() string { return v.Reference }
 
+type Material struct {
+	Id      string `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+func (m Material) Title() string       { return m.Title }
+func (m Material) Description() string {
+	if len(m.Content) > 60 {
+		return m.Content[:57] + "..."
+	}
+	return m.Content
+}
+func (m Material) FilterValue() string { return m.Title }
+
+type CrossReference struct {
+	Id           string `json:"id"`
+	Reference    string `json:"reference"`
+	RelatedVerse string `json:"related_verse"`
+}
+
+func (cr CrossReference) Title() string       { return cr.Reference }
+func (cr CrossReference) Description() string { return cr.RelatedVerse }
+func (cr CrossReference) FilterValue() string { return cr.Reference }
+
 type PBResponse struct {
 	Items []Verse `json:"items"`
+}
+
+type MaterialsResponse struct {
+	Items []Material `json:"items"`
+}
+
+type CrossRefResponse struct {
+	Items []CrossReference `json:"items"`
 }
 
 type AuthResponse struct {
@@ -65,6 +99,16 @@ type authResultMsg struct {
 type searchResultMsg struct {
 	results []Verse
 	err     error
+}
+
+type materialsResultMsg struct {
+	materials []Material
+	err       error
+}
+
+type crossRefResultMsg struct {
+	crossRefs []CrossReference
+	err       error
 }
 
 type saveResultMsg struct {
@@ -111,20 +155,27 @@ const (
 	modeSearch
 	modeEntryTitle
 	modeEntryBody
+	modeMaterials
+	modeMaterialDetail
+	modeCrossRefs
 )
 
 type model struct {
-	mode        appMode
-	emailInput  textinput.Model
-	passInput   textinput.Model
-	searchInput textinput.Model
-	titleInput  textinput.Model
-	bodyInput   textarea.Model
-	resultsList list.Model
-	authToken   string
-	loading     bool
-	err         error
-	successMsg  string
+	mode           appMode
+	emailInput     textinput.Model
+	passInput      textinput.Model
+	searchInput    textinput.Model
+	titleInput     textinput.Model
+	bodyInput      textarea.Model
+	resultsList    list.Model
+	materialsList  list.Model
+	crossRefsList  list.Model
+	selectedMat    Material
+	selectedVerse  Verse
+	authToken      string
+	loading        bool
+	err            error
+	successMsg     string
 }
 
 func initialModel() model {
@@ -170,15 +221,27 @@ func initialModel() model {
 	resultsList.SetShowStatusBar(false)
 	resultsList.SetFilteringEnabled(false)
 
+	materialsList := list.New([]list.Item{}, delegate, 80, 20)
+	materialsList.SetShowTitle(false)
+	materialsList.SetShowStatusBar(false)
+	materialsList.SetFilteringEnabled(false)
+
+	crossRefsList := list.New([]list.Item{}, delegate, 80, 20)
+	crossRefsList.SetShowTitle(false)
+	crossRefsList.SetShowStatusBar(false)
+	crossRefsList.SetFilteringEnabled(false)
+
 	return model{
-		mode:        initialMode,
-		authToken:   savedToken,
-		emailInput:  ei,
-		passInput:   pi,
-		searchInput: si,
-		titleInput:  ti,
-		bodyInput:   bi,
-		resultsList: resultsList,
+		mode:          initialMode,
+		authToken:     savedToken,
+		emailInput:    ei,
+		passInput:     pi,
+		searchInput:   si,
+		titleInput:    ti,
+		bodyInput:     bi,
+		resultsList:   resultsList,
+		materialsList: materialsList,
+		crossRefsList: crossRefsList,
 	}
 }
 
@@ -195,10 +258,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := lipgloss.NewStyle().Margin(1, 2).GetFrameSize()
 		m.resultsList.SetSize(msg.Width-h, msg.Height-v-10)
+		m.materialsList.SetSize(msg.Width-h, msg.Height-v-10)
+		m.crossRefsList.SetSize(msg.Width-h, msg.Height-v-10)
 
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
+			if m.mode == modeMaterials || m.mode == modeMaterialDetail || m.mode == modeCrossRefs {
+				m.mode = modeSearch
+				m.searchInput.Focus()
+				return m, nil
+			}
 			return m, tea.Quit
 
 		case tea.KeyEnter:
@@ -234,6 +304,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return m, nil
 					}
 				}
+			} else if m.mode == modeMaterials {
+				if item, ok := m.materialsList.SelectedItem().(Material); ok {
+					m.selectedMat = item
+					m.mode = modeMaterialDetail
+					return m, nil
+				}
+			}
+
+		case tea.KeyRunes:
+			char := msg.String()
+			if m.mode == modeSearch && !m.searchInput.Focused() {
+				if char == "m" {
+					m.loading = true
+					m.err = nil
+					m.mode = modeMaterials
+					return m, fetchMaterials(m.authToken)
+				} else if char == "x" {
+					if item, ok := m.resultsList.SelectedItem().(Verse); ok {
+						m.selectedVerse = item
+						m.loading = true
+						m.err = nil
+						m.mode = modeCrossRefs
+						return m, fetchCrossReferences(item.Reference)
+					}
+				}
+			} else if m.mode == modeSearch && m.searchInput.Focused() && char == "m" {
+				m.loading = true
+				m.err = nil
+				m.mode = modeMaterials
+				return m, fetchMaterials(m.authToken)
 			}
 
 		case tea.KeyTab:
@@ -293,12 +393,37 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, nil
 		}
-		
 		items := make([]list.Item, len(msg.results))
 		for i, v := range msg.results {
 			items[i] = v
 		}
 		m.resultsList.SetItems(items)
+		return m, nil
+
+	case materialsResultMsg:
+		m.loading = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		items := make([]list.Item, len(msg.materials))
+		for i, mat := range msg.materials {
+			items[i] = mat
+		}
+		m.materialsList.SetItems(items)
+		return m, nil
+
+	case crossRefResultMsg:
+		m.loading = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		items := make([]list.Item, len(msg.crossRefs))
+		for i, cr := range msg.crossRefs {
+			items[i] = cr
+		}
+		m.crossRefsList.SetItems(items)
 		return m, nil
 
 	case saveResultMsg:
@@ -326,11 +451,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case modeSearch:
 		m.searchInput, cmd = m.searchInput.Update(msg)
 		cmds = append(cmds, cmd)
-		
 		var listCmd tea.Cmd
 		m.resultsList, listCmd = m.resultsList.Update(msg)
 		cmds = append(cmds, listCmd)
-		
+	case modeMaterials:
+		var listCmd tea.Cmd
+		m.materialsList, listCmd = m.materialsList.Update(msg)
+		cmds = append(cmds, listCmd)
+	case modeCrossRefs:
+		var listCmd tea.Cmd
+		m.crossRefsList, listCmd = m.crossRefsList.Update(msg)
+		cmds = append(cmds, listCmd)
 	case modeEntryTitle:
 		m.titleInput, cmd = m.titleInput.Update(msg)
 		cmds = append(cmds, cmd)
@@ -384,6 +515,44 @@ func searchPocketBase(query string) tea.Cmd {
 	}
 }
 
+func fetchMaterials(token string) tea.Cmd {
+	return func() tea.Msg {
+		apiURL := "http://127.0.0.1:8090/api/collections/materials/records?sort=-created"
+		req, _ := http.NewRequest("GET", apiURL, nil)
+		req.Header.Set("Authorization", token)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil || resp.StatusCode != 200 {
+			return materialsResultMsg{err: fmt.Errorf("failed to fetch materials (check auth)")}
+		}
+		defer resp.Body.Close()
+
+		var matResp MaterialsResponse
+		json.NewDecoder(resp.Body).Decode(&matResp)
+		return materialsResultMsg{materials: matResp.Items}
+	}
+}
+
+func fetchCrossReferences(reference string) tea.Cmd {
+	return func() tea.Msg {
+		filter := fmt.Sprintf(`reference ~ "%s"`, reference)
+		apiURL := fmt.Sprintf("http://127.0.0.1:8090/api/collections/cross_references/records?filter=%s", url.QueryEscape(filter))
+
+		req, _ := http.NewRequest("GET", apiURL, nil)
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil || resp.StatusCode != 200 {
+			return crossRefResultMsg{err: fmt.Errorf("failed to fetch cross-references")}
+		}
+		defer resp.Body.Close()
+
+		var crResp CrossRefResponse
+		json.NewDecoder(resp.Body).Decode(&crResp)
+		return crossRefResultMsg{crossRefs: crResp.Items}
+	}
+}
+
 func fetchNLTVerse(reference string, apiKey string) tea.Cmd {
 	return func() tea.Msg {
 		if apiKey == "YOUR_NLT_API_KEY_HERE" {
@@ -404,19 +573,13 @@ func fetchNLTVerse(reference string, apiKey string) tea.Cmd {
 			return searchResultMsg{err: fmt.Errorf("NLT API returned error (check reference or API key)")}
 		}
 
-		// Read raw HTML
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
 		rawText := buf.String()
 
-		// Unescape HTML entities
 		cleanText := html.UnescapeString(rawText)
-
-		// Strip all HTML tags
 		re := regexp.MustCompile(`<[^>]*>`)
 		cleanText = re.ReplaceAllString(cleanText, "")
-
-		// Trim whitespace
 		cleanText = strings.TrimSpace(cleanText)
 
 		result := Verse{
@@ -485,10 +648,41 @@ func (m model) View() string {
 		}
 
 		if m.searchInput.Focused() {
-			s += helpStyle.Render("\ntab: Focus List • up/down: Scroll • enter: Search • esc: Quit")
+			s += helpStyle.Render("\ntab: Focus List • m: Materials • up/down: Scroll • enter: Search • esc: Quit")
 		} else {
-			s += helpStyle.Render("\ntab: Blank Material • up/down: Scroll • enter: Draft Verse • esc: Quit")
+			s += helpStyle.Render("\ntab: Blank • m: Materials • x: Cross-Refs • enter: Draft Verse • esc: Quit")
 		}
+
+	case modeMaterials:
+		s += modeStyle.Render("Mode: Saved Study Materials") + "\n"
+		if m.loading {
+			s += lipgloss.NewStyle().Foreground(lipgloss.Color("226")).Render("Loading materials...") + "\n"
+		} else if m.err != nil {
+			s += errorStyle.Render(m.err.Error()) + "\n"
+		} else if len(m.materialsList.Items()) > 0 {
+			s += m.materialsList.View()
+		} else {
+			s += lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("No saved materials found.") + "\n"
+		}
+		s += helpStyle.Render("\nup/down: Scroll • enter: Read Material • esc: Back to Search")
+
+	case modeMaterialDetail:
+		s += modeStyle.Render("Reading: "+m.selectedMat.Title) + "\n"
+		s += contentBox.Render(m.selectedMat.Content) + "\n"
+		s += helpStyle.Render("\nesc: Back to Materials List")
+
+	case modeCrossRefs:
+		s += modeStyle.Render("Cross-References for: "+m.selectedVerse.Reference) + "\n"
+		if m.loading {
+			s += lipgloss.NewStyle().Foreground(lipgloss.Color("226")).Render("Fetching cross-references...") + "\n"
+		} else if m.err != nil {
+			s += errorStyle.Render(m.err.Error()) + "\n"
+		} else if len(m.crossRefsList.Items()) > 0 {
+			s += m.crossRefsList.View()
+		} else {
+			s += lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("No cross-references found for this verse.") + "\n"
+		}
+		s += helpStyle.Render("\nesc: Back to Search")
 
 	case modeEntryTitle, modeEntryBody:
 		s += modeStyle.Render("Mode: Add Study Material") + "\n\n"
@@ -507,18 +701,15 @@ func (m model) View() string {
 }
 
 func main() {
-	// Parse CLI flags for version
 	v := flag.Bool("v", false, "Print application version")
 	version := flag.Bool("version", false, "Print application version")
 	flag.Parse()
 
-	// Intercept and print version if requested
 	if *v || *version {
 		fmt.Printf("Faith Builder CLI version %s\n", Version)
 		os.Exit(0)
 	}
 
-	// Initialize the TUI
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error: %v\n", err)
