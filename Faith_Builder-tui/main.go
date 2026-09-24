@@ -46,19 +46,19 @@ func (v Verse) Description() string { return v.Text }
 func (v Verse) FilterValue() string { return v.Reference }
 
 type Material struct {
-	Id      string `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	Id        string `json:"id"`
+	TitleText string `json:"title"`
+	Content   string `json:"content"`
 }
 
-func (m Material) Title() string       { return m.Title }
+func (m Material) Title() string       { return m.TitleText }
 func (m Material) Description() string {
 	if len(m.Content) > 60 {
 		return m.Content[:57] + "..."
 	}
 	return m.Content
 }
-func (m Material) FilterValue() string { return m.Title }
+func (m Material) FilterValue() string { return m.TitleText }
 
 type CrossReference struct {
 	Id           string `json:"id"`
@@ -798,7 +798,7 @@ func (m model) View() string {
 		s += helpStyle.Render("\nup/down: Scroll • enter: Read Material • esc: Back to Search")
 
 	case modeMaterialDetail:
-		s += modeStyle.Render("Reading: "+m.selectedMat.Title) + "\n"
+		s += modeStyle.Render("Reading: "+m.selectedMat.TitleText) + "\n"
 		s += contentBox.Render(m.selectedMat.Content) + "\n"
 		s += helpStyle.Render("\nesc: Back to Materials List")
 
