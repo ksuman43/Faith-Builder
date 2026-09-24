@@ -2,7 +2,7 @@
 
 OUTPUT_DIR="build"
 
-# Automatically grab the latest Git tag. If no tags exist or git fails, fall back to "dev"
+# Automatically grab the latest Git tag
 VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 
 # Platforms to build for (Format: OS/ARCH)
@@ -32,12 +32,22 @@ for PLATFORM in "${PLATFORMS[@]}"; do
 
     echo "Compiling for $GOOS/$GOARCH..."
     
-    # Inject the dynamic Git version tag into main.Version
-    GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="-s -w -X main.Version=${VERSION}" -o $OUTPUT_NAME main.go
+    # Inject the dynamic Git version tag and strip debugging info (-s -w)
+    GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="-s -w -X main.Version=${VERSION}" -o "$OUTPUT_NAME" main.go
 
     if [ $? -ne 0 ]; then
         echo "Error compiling for $GOOS/$GOARCH. Aborting."
         exit 1
+    fi
+
+    # UPX Compression (Skipping Darwin to prevent code signing issues)
+    if [ "$GOOS" != "darwin" ]; then
+        if command -v upx &> /dev/null; then
+            echo "Compressing with UPX..."
+            upx --best --lzma "$OUTPUT_NAME" > /dev/null
+        else
+            echo "UPX not found, skipping compression for $OUTPUT_NAME"
+        fi
     fi
 done
 
