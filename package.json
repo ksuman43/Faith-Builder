@@ -1,0 +1,22 @@
+{
+  "name": "faith_builder",
+  "version": "1.0.0",
+  "description": "Bible study and cross referencing notes with messages, books, and other content.",
+  "main": "ingest-md.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ksuman43/Faith-Builder.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ksuman43/Faith-Builder/issues"
+  },
+  "homepage": "https://github.com/ksuman43/Faith-Builder#readme",
+  "dependencies": {
+    "gray-matter": "^4.0.3"
+  }
+}
