@@ -7,3 +7,12 @@ fb-*
 # OS generated files
 .DS_Store
 EOT
+
+# Ignore compiled TUI binaries
+build/
+
+# Ignore PocketBase database (keeps your data local)
+pocketbase/pb_data/
+
+# Ignore personal markdown study notes
+notes/**/*.md
