@@ -70,6 +70,17 @@ func (cr CrossReference) Title() string       { return cr.Reference }
 func (cr CrossReference) Description() string { return cr.RelatedVerse }
 func (cr CrossReference) FilterValue() string { return cr.Reference }
 
+type Bookmark struct {
+	Id        string `json:"id"`
+	Reference string `json:"reference"`
+	Text      string `json:"text"`
+}
+
+func (b Bookmark) Title() string       { return b.Reference }
+func (b Bookmark) Description() string { return b.Text }
+func (b Bookmark) FilterValue() string { return b.Reference }
+
+// --- Responses ---
 type PBResponse struct {
 	Items []Verse `json:"items"`
 }
@@ -80,6 +91,10 @@ type MaterialsResponse struct {
 
 type CrossRefResponse struct {
 	Items []CrossReference `json:"items"`
+}
+
+type BookmarksResponse struct {
+	Items []Bookmark `json:"items"`
 }
 
 type AuthResponse struct {
@@ -108,6 +123,11 @@ type materialsResultMsg struct {
 
 type crossRefResultMsg struct {
 	crossRefs []CrossReference
+	err       error
+}
+
+type bookmarksResultMsg struct {
+	bookmarks []Bookmark
 	err       error
 }
 
@@ -162,6 +182,7 @@ const (
 	modeMaterials
 	modeMaterialDetail
 	modeCrossRefs
+	modeBookmarks
 )
 
 type model struct {
@@ -174,6 +195,7 @@ type model struct {
 	resultsList    list.Model
 	materialsList  list.Model
 	crossRefsList  list.Model
+	bookmarksList  list.Model
 	selectedMat    Material
 	selectedVerse  Verse
 	authToken      string
@@ -235,6 +257,11 @@ func initialModel() model {
 	crossRefsList.SetShowStatusBar(false)
 	crossRefsList.SetFilteringEnabled(false)
 
+	bookmarksList := list.New([]list.Item{}, delegate, 80, 20)
+	bookmarksList.SetShowTitle(false)
+	bookmarksList.SetShowStatusBar(false)
+	bookmarksList.SetFilteringEnabled(false)
+
 	return model{
 		mode:          initialMode,
 		authToken:     savedToken,
@@ -246,6 +273,7 @@ func initialModel() model {
 		resultsList:   resultsList,
 		materialsList: materialsList,
 		crossRefsList: crossRefsList,
+		bookmarksList: bookmarksList,
 	}
 }
 
@@ -264,11 +292,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resultsList.SetSize(msg.Width-h, msg.Height-v-10)
 		m.materialsList.SetSize(msg.Width-h, msg.Height-v-10)
 		m.crossRefsList.SetSize(msg.Width-h, msg.Height-v-10)
+		m.bookmarksList.SetSize(msg.Width-h, msg.Height-v-10)
 
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
-			if m.mode == modeMaterials || m.mode == modeMaterialDetail || m.mode == modeCrossRefs {
+			if m.mode == modeMaterials || m.mode == modeMaterialDetail || m.mode == modeCrossRefs || m.mode == modeBookmarks {
 				m.mode = modeSearch
 				m.searchInput.Focus()
 				return m, nil
@@ -314,6 +343,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mode = modeMaterialDetail
 					return m, nil
 				}
+			} else if m.mode == modeBookmarks {
+				if item, ok := m.bookmarksList.SelectedItem().(Bookmark); ok {
+					m.titleInput.SetValue("Study: " + item.Reference)
+					m.bodyInput.SetValue(item.Text + "\n\nMy Notes:\n")
+					
+					m.mode = modeEntryBody
+					m.bodyInput.Focus()
+					m.bodyInput.CursorEnd()
+					return m, nil
+				}
 			}
 
 		case tea.KeyCtrlB:
@@ -333,6 +372,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.err = nil
 					m.mode = modeMaterials
 					return m, fetchMaterials(m.authToken)
+				} else if char == "b" {
+					m.loading = true
+					m.err = nil
+					m.mode = modeBookmarks
+					return m, fetchBookmarks(m.authToken)
 				} else if char == "x" {
 					if item, ok := m.resultsList.SelectedItem().(Verse); ok {
 						m.selectedVerse = item
@@ -342,11 +386,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return m, fetchCrossReferences(item.Reference)
 					}
 				}
-			} else if m.mode == modeSearch && m.searchInput.Focused() && char == "m" {
-				m.loading = true
-				m.err = nil
-				m.mode = modeMaterials
-				return m, fetchMaterials(m.authToken)
+			} else if m.mode == modeSearch && m.searchInput.Focused() {
+				if char == "m" {
+					m.loading = true
+					m.err = nil
+					m.mode = modeMaterials
+					return m, fetchMaterials(m.authToken)
+				} else if char == "b" {
+					m.loading = true
+					m.err = nil
+					m.mode = modeBookmarks
+					return m, fetchBookmarks(m.authToken)
+				}
 			}
 
 		case tea.KeyTab:
@@ -439,6 +490,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.crossRefsList.SetItems(items)
 		return m, nil
 
+	case bookmarksResultMsg:
+		m.loading = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		items := make([]list.Item, len(msg.bookmarks))
+		for i, b := range msg.bookmarks {
+			items[i] = b
+		}
+		m.bookmarksList.SetItems(items)
+		return m, nil
+
 	case saveResultMsg:
 		m.loading = false
 		if msg.err != nil {
@@ -483,6 +547,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case modeCrossRefs:
 		var listCmd tea.Cmd
 		m.crossRefsList, listCmd = m.crossRefsList.Update(msg)
+		cmds = append(cmds, listCmd)
+	case modeBookmarks:
+		var listCmd tea.Cmd
+		m.bookmarksList, listCmd = m.bookmarksList.Update(msg)
 		cmds = append(cmds, listCmd)
 	case modeEntryTitle:
 		m.titleInput, cmd = m.titleInput.Update(msg)
@@ -572,6 +640,25 @@ func fetchCrossReferences(reference string) tea.Cmd {
 		var crResp CrossRefResponse
 		json.NewDecoder(resp.Body).Decode(&crResp)
 		return crossRefResultMsg{crossRefs: crResp.Items}
+	}
+}
+
+func fetchBookmarks(token string) tea.Cmd {
+	return func() tea.Msg {
+		apiURL := "http://127.0.0.1:8090/api/collections/bookmarks/records?sort=-created"
+		req, _ := http.NewRequest("GET", apiURL, nil)
+		req.Header.Set("Authorization", token)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil || resp.StatusCode != 200 {
+			return bookmarksResultMsg{err: fmt.Errorf("failed to fetch bookmarks (check auth/collection)")}
+		}
+		defer resp.Body.Close()
+
+		var bResp BookmarksResponse
+		json.NewDecoder(resp.Body).Decode(&bResp)
+		return bookmarksResultMsg{bookmarks: bResp.Items}
 	}
 }
 
@@ -692,9 +779,9 @@ func (m model) View() string {
 		}
 
 		if m.searchInput.Focused() {
-			s += helpStyle.Render("\ntab: Focus List • m: Materials • up/down: Scroll • enter: Search • esc: Quit")
+			s += helpStyle.Render("\ntab: Focus List • b: Bookmarks • m: Materials • esc: Quit")
 		} else {
-			s += helpStyle.Render("\ntab: Blank • m: Materials • x: Cross-Refs • ctrl+b: Bookmark • enter: Draft Verse • esc: Quit")
+			s += helpStyle.Render("\ntab: Blank • b: Bookmarks • m: Materials • x: Cross-Refs • ctrl+b: Bookmark • esc: Quit")
 		}
 
 	case modeMaterials:
@@ -714,6 +801,19 @@ func (m model) View() string {
 		s += modeStyle.Render("Reading: "+m.selectedMat.Title) + "\n"
 		s += contentBox.Render(m.selectedMat.Content) + "\n"
 		s += helpStyle.Render("\nesc: Back to Materials List")
+
+	case modeBookmarks:
+		s += modeStyle.Render("Mode: Saved Bookmarks") + "\n"
+		if m.loading {
+			s += lipgloss.NewStyle().Foreground(lipgloss.Color("226")).Render("Loading bookmarks...") + "\n"
+		} else if m.err != nil {
+			s += errorStyle.Render(m.err.Error()) + "\n"
+		} else if len(m.bookmarksList.Items()) > 0 {
+			s += m.bookmarksList.View()
+		} else {
+			s += lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("No bookmarks found.") + "\n"
+		}
+		s += helpStyle.Render("\nup/down: Scroll • enter: Draft Material • esc: Back to Search")
 
 	case modeCrossRefs:
 		s += modeStyle.Render("Cross-References for: "+m.selectedVerse.Reference) + "\n"
