@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useEffect, useState } from 'react';
 import { pb } from './lib/pb';
 import SidebarNav from './components/SidebarNav';
@@ -10,6 +9,9 @@ import MaterialViewerModal from './components/MaterialViewerModal';
 import LoginModal from './components/LoginModal';
 
 function App() {
+  // Theme state
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+
   // Auth state
   const [isAdmin, setIsAdmin] = useState(pb.authStore.isValid);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -27,6 +29,20 @@ function App() {
   const [isIngestOpen, setIsIngestOpen] = useState(false);
   const [viewingMaterial, setViewingMaterial] = useState(null);
 
+  // Handle Theme Switching
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
   // Initialize App (Fetch Books)
   useEffect(() => {
     async function initApp() {
@@ -39,7 +55,7 @@ function App() {
           setCurrentBook(resultList[0]); // Default to Genesis
         }
       } catch (err) {
-        console.error("Failed to connect to PocketBase:", err);
+        console.error("Failed to connect to PocketBase or fetch books:", err);
       }
     }
     initApp();
@@ -85,21 +101,38 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col overflow-hidden transition-colors duration-200">
       {/* Top Navbar */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm shrink-0">
+      <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center shadow-sm shrink-0 transition-colors duration-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Faith Builder</h1>
-          <p className="text-xs text-gray-500 font-medium">Deep Study Bible Database Tool</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-emerald-400 tracking-tight transition-colors">Faith Builder</h1>
+          <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Deep Study Bible Database Tool</p>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
+            title="Toggle Dark Mode"
+          >
+            {theme === 'light' ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            )}
+          </button>
+
           {/* Only show Add Material and Logout if authenticated */}
           {isAdmin ? (
             <>
               <button
                 onClick={() => setIsIngestOpen(true)}
-                className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-blue-200"
+                className="flex items-center gap-2 bg-blue-50 dark:bg-emerald-900/30 hover:bg-blue-100 dark:hover:bg-emerald-900/60 text-blue-700 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-blue-200 dark:border-emerald-800"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -108,10 +141,10 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  pb.authStore.clear(); // Clears token from local storage
+                  pb.authStore.clear();
                   setIsAdmin(false);
                 }}
-                className="text-sm font-medium text-gray-500 hover:text-gray-800 px-2"
+                className="text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 px-2"
               >
                 Logout
               </button>
@@ -119,7 +152,7 @@ function App() {
           ) : (
             <button
               onClick={() => setIsLoginOpen(true)}
-              className="text-sm font-medium text-gray-400 hover:text-gray-600 px-2"
+              className="text-sm font-medium text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 px-2"
             >
               Admin Login
             </button>
@@ -127,13 +160,13 @@ function App() {
           
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-3 bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200"
+            className="flex items-center gap-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 dark:border-slate-700"
           >
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
             <span>Search scripture...</span>
-            <kbd className="bg-white px-2 py-0.5 text-xs font-semibold text-gray-500 rounded border border-gray-300 shadow-sm">
+            <kbd className="bg-white dark:bg-slate-900 px-2 py-0.5 text-xs font-semibold text-gray-500 dark:text-slate-400 rounded border border-gray-300 dark:border-slate-700 shadow-sm">
               Ctrl K
             </kbd>
           </button>
@@ -143,8 +176,8 @@ function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-80px)]">
         
-        {/* Left Column: Navigation Sidebar (3 cols) */}
-        <div className="lg:col-span-3 h-full">
+        {/* Left Column: Navigation Sidebar */}
+        <div className="lg:col-span-3 h-full overflow-hidden flex flex-col">
           <SidebarNav 
             books={books}
             currentBook={currentBook}
@@ -153,8 +186,8 @@ function App() {
           />
         </div>
 
-        {/* Center Column: Reader (5 cols) */}
-        <div className="lg:col-span-5 h-full">
+        {/* Center Column: Reader */}
+        <div className="lg:col-span-5 h-full overflow-hidden flex flex-col">
           <ChapterReader 
             books={books}
             currentBook={currentBook}
@@ -165,8 +198,8 @@ function App() {
           />
         </div>
 
-        {/* Right Column: Deep Study (4 cols) */}
-        <div className="lg:col-span-4 h-full">
+        {/* Right Column: Deep Study */}
+        <div className="lg:col-span-4 h-full overflow-hidden flex flex-col">
           <CrossReferencePanel 
             activeVerse={activeVerse}
             onSelectVerse={handleSelectVerse}

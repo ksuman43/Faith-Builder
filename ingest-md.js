@@ -4,8 +4,8 @@ const matter = require('gray-matter');
 
 // Configuration
 const PB_URL = 'http://127.0.0.1:8090';
-const EMAIL = 'admin@example.com';       // <-- Update this
-const PASSWORD = 'your-password';        // <-- Update this
+const EMAIL = 'aaron.grimm66@gmail.com';       // <-- Update this
+const PASSWORD = 'fBWgwJL5iOxH';        // <-- Update this
 const MD_DIR = './notes';                // <-- Root folder containing your .md files
 
 function getMarkdownFiles(dir, fileList = []) {
