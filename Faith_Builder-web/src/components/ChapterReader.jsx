@@ -1,144 +1,125 @@
-// src/components/ChapterReader.jsx
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { pb } from '../lib/pb';
 
-// Standard canonical chapter counts to handle book-jumping
-const CHAPTER_COUNTS = [
-  50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42, 150, 
-  31, 12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14, 4, 28, 16, 
-  24, 21, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13, 5, 5, 3, 5, 1, 1, 1, 22
-];
-
-export default function ChapterReader({ 
-  books = [], 
-  currentBook, 
-  currentChapter, 
-  activeVerse, 
-  onSelectVerse, 
-  onNavigate 
-}) {
+export default function ChapterReader({ books, currentBook, currentChapter, activeVerse, onSelectVerse, onNavigate }) {
   const [verses, setVerses] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Fetch verses when the book or chapter changes
   useEffect(() => {
-    if (!currentBook) return;
+    let isMounted = true;
 
-    async function fetchChapter() {
+    async function fetchVerses() {
+      if (!currentBook) return;
+      
       setLoading(true);
       try {
+        // Using PocketBase parameterized filter syntax to prevent 400 Bad Request errors
         const records = await pb.collection('verses').getFullList({
           filter: `book = "${currentBook.id}" && chapter = ${currentChapter}`,
-          sort: 'verse_num',
+          sort: 'verse',
         });
-        setVerses(records);
+        
+        if (isMounted) {
+          setVerses(records);
+        }
       } catch (err) {
-        console.error("Failed to fetch chapter:", err);
+        console.error("Error fetching verses:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
-    fetchChapter();
+    fetchVerses();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentBook, currentChapter]);
 
-  // --- Navigation Logic ---
-  const handlePrev = () => {
+  const handleVerseClick = (v) => {
+    const reference = v.reference || `${currentBook.name} ${currentChapter}:${v.verse}`;
+    onSelectVerse({ ...v, reference, book: currentBook.id, chapter: currentChapter });
+  };
+
+  const handlePrevChapter = () => {
     if (currentChapter > 1) {
-      // Just go back one chapter in the same book
       onNavigate(currentBook, currentChapter - 1);
-    } else {
-      // Jump to the last chapter of the previous book
-      const bookIndex = books.findIndex(b => b.id === currentBook.id);
-      if (bookIndex > 0) {
-        const prevBook = books[bookIndex - 1];
-        const prevBookMaxChapter = CHAPTER_COUNTS[prevBook.sort_order - 1];
-        onNavigate(prevBook, prevBookMaxChapter);
-      }
     }
   };
 
-  const handleNext = () => {
-    const maxChapters = CHAPTER_COUNTS[currentBook.sort_order - 1];
-    
-    if (currentChapter < maxChapters) {
-      // Just go forward one chapter in the same book
+  const handleNextChapter = () => {
+    if (currentChapter < currentBook.chapters) {
       onNavigate(currentBook, currentChapter + 1);
-    } else {
-      // Jump to chapter 1 of the next book
-      const bookIndex = books.findIndex(b => b.id === currentBook.id);
-      if (bookIndex < books.length - 1) {
-        const nextBook = books[bookIndex + 1];
-        onNavigate(nextBook, 1);
-      }
     }
   };
 
   if (!currentBook) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 bg-white rounded-xl shadow-sm border border-gray-200">
-        Select a book to begin reading.
+      <div className="flex items-center justify-center h-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm">
+        <p className="text-gray-400 dark:text-slate-500">Select a book from the sidebar to begin.</p>
       </div>
     );
   }
 
-  // Disable buttons if we are at the absolute beginning or end of the Bible
-  const isFirstChapter = currentBook.sort_order === 1 && currentChapter === 1;
-  const isLastChapter = currentBook.sort_order === 66 && currentChapter === 22;
-
   return (
-    <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[75vh] overflow-hidden">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm transition-colors duration-200 overflow-hidden relative">
       
-      {/* Chapter Header */}
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-        <h2 className="text-xl font-bold text-gray-900">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center z-10 shadow-sm">
+        <button 
+          onClick={handlePrevChapter}
+          disabled={currentChapter <= 1}
+          className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 disabled:opacity-30 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        
+        <h2 className="text-xl font-bold text-gray-900 dark:text-emerald-400 font-serif">
           {currentBook.name} {currentChapter}
         </h2>
         
-        <div className="flex space-x-2">
-          <button 
-            onClick={handlePrev}
-            disabled={isFirstChapter}
-            className="px-3 py-1 bg-white border border-gray-200 rounded text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Prev
-          </button>
-          <button 
-            onClick={handleNext}
-            disabled={isLastChapter}
-            className="px-3 py-1 bg-white border border-gray-200 rounded text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Next
-          </button>
-        </div>
+        <button 
+          onClick={handleNextChapter}
+          disabled={currentChapter >= currentBook.chapters}
+          className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 disabled:opacity-30 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+        </button>
       </div>
 
-      {/* Scripture Reading Pane */}
-      <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
+      {/* Reader Body */}
+      <div className="flex-1 overflow-y-auto p-6 md:p-10 scrollbar-thin scroll-smooth text-lg leading-relaxed text-gray-800 dark:text-slate-300 font-serif">
         {loading ? (
-          <div className="flex justify-center items-center h-32">
-            <span className="text-gray-400 text-sm animate-pulse">Loading scripture...</span>
+          <div className="animate-pulse space-y-4 max-w-2xl mx-auto">
+            <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-4/5"></div>
+          </div>
+        ) : verses.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-slate-500 mt-10">
+            <p>No verses found for {currentBook.name} {currentChapter}.</p>
+            <p className="text-sm mt-2">Check collection schema or public list rules in PocketBase.</p>
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto pb-12">
-            {verses.map((verse) => {
-              const isActive = activeVerse?.id === verse.id;
+          <div className="max-w-3xl mx-auto">
+            {verses.map((v) => {
+              const isSelected = activeVerse?.id === v.id;
               
               return (
                 <span 
-                  key={verse.id}
-                  onClick={() => onSelectVerse(verse)}
-                  className={`
-                    inline cursor-pointer text-lg leading-relaxed transition-colors duration-150 rounded
-                    ${isActive ? 'bg-blue-100 text-blue-900 font-medium pb-0.5 border-b-2 border-blue-400' : 'hover:bg-gray-100 text-gray-800'}
-                  `}
+                  key={v.id} 
+                  onClick={() => handleVerseClick(v)}
+                  className={`inline cursor-pointer transition-colors duration-150 rounded-sm px-1 ${
+                    isSelected 
+                      ? 'bg-yellow-200 dark:bg-emerald-900/60 text-black dark:text-emerald-100 shadow-sm' 
+                      : 'hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
                 >
-                  <sup className={`
-                    font-bold text-[10px] ml-1.5 mr-0.5 select-none
-                    ${isActive ? 'text-blue-700' : 'text-gray-400'}
-                  `}>
-                    {verse.verse_num}
+                  <sup className="text-xs font-sans font-bold text-gray-400 dark:text-slate-500 mr-1 select-none">
+                    {v.verse}
                   </sup>
-                  {verse.text}{' '}
+                  {v.text}{' '}
                 </span>
               );
             })}

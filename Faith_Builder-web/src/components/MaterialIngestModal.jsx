@@ -1,134 +1,132 @@
-// src/components/MaterialIngestModal.jsx
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { pb } from '../lib/pb';
 
 export default function MaterialIngestModal({ isOpen, onClose, onIngestSuccess }) {
-  const [formData, setFormData] = useState({
-    title: '',
-    source_type: 'sermon',
-    author: '',
-    content: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [tags, setTags] = useState('');
+  const [verses, setVerses] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   if (!isOpen) return null;
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setLoading(true);
     setError(null);
 
     try {
-      // Push the new material to PocketBase
-      const record = await pb.collection('materials').create(formData);
+      await pb.collection('materials').create({
+        title,
+        content,
+        tags,
+        verses, // This field is critical for the CrossReferencePanel to find it
+      });
       
-      // Reset form and close
-      setFormData({ title: '', source_type: 'sermon', author: '', content: '' });
-      onIngestSuccess(record);
+      // Reset form
+      setTitle('');
+      setContent('');
+      setTags('');
+      setVerses('');
+      
+      if (onIngestSuccess) onIngestSuccess();
       onClose();
     } catch (err) {
-      console.error("Failed to ingest material:", err);
-      setError(err.message || "Failed to save material.");
+      console.error("Failed to create material:", err);
+      setError(err.message || 'Failed to create material');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-200 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-slate-100 rounded-xl max-w-2xl w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh] scrollbar-thin">
         
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-900">Ingest Study Material</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-emerald-400">Add Study Material</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
+        
+        {error && (
+          <div className="mb-4 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950/50 p-3 rounded-lg border border-red-200 dark:border-red-800">
+            {error}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 flex flex-col gap-4">
-          {error && (
-            <div className="bg-red-50 text-red-700 p-3 rounded text-sm border border-red-200">
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
+              Title
+            </label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. The Armor of God"
+              className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-emerald-500"
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Title</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
+                Linked Verses
+              </label>
               <input
-                required
                 type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="e.g., Romans 8 Sermon, Mere Christianity Ch 3"
-                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                value={verses}
+                onChange={(e) => setVerses(e.target.value)}
+                placeholder="e.g. Ephesians 6:11, Ephesians 6:12"
+                className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-emerald-500"
               />
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Source Type</label>
-                <select
-                  name="source_type"
-                  value={formData.source_type}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="sermon">Sermon</option>
-                  <option value="book">Book/Commentary</option>
-                  <option value="email">Email</option>
-                  <option value="article">Article</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Author / Speaker</label>
-                <input
-                  type="text"
-                  name="author"
-                  value={formData.author}
-                  onChange={handleChange}
-                  placeholder="John Doe"
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
+                Tags
+              </label>
+              <input
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="e.g. warfare, paul, daily"
+                className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-emerald-500"
+              />
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col mt-2">
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Content Material</label>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
+              Markdown Content
+            </label>
             <textarea
               required
-              name="content"
-              value={formData.content}
-              onChange={handleChange}
-              placeholder="Paste your transcript, excerpt, or notes here..."
-              className="w-full flex-1 border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none min-h-[250px]"
-            ></textarea>
+              rows={10}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Write your study notes here..."
+              className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-emerald-500 scrollbar-thin"
+            />
           </div>
 
-          <div className="pt-4 mt-2 border-t border-gray-100 flex justify-end gap-3">
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              disabled={loading}
+              className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-lg transition disabled:opacity-50"
             >
-              {isSubmitting ? 'Saving...' : 'Save Material'}
+              {loading ? 'Saving...' : 'Save Material'}
             </button>
           </div>
         </form>
