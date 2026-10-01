@@ -16,3 +16,4 @@ pocketbase/pb_data/
 
 # Ignore personal markdown study notes
 notes/**/*.md
+Faith_Builder-backend/pb_data/
