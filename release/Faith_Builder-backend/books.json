@@ -1,0 +1,398 @@
+[
+  {
+    "id": "book00000000001",
+    "name": "Genesis",
+    "testament": "OT",
+    "sort_order": 1
+  },
+  {
+    "id": "book00000000002",
+    "name": "Exodus",
+    "testament": "OT",
+    "sort_order": 2
+  },
+  {
+    "id": "book00000000003",
+    "name": "Leviticus",
+    "testament": "OT",
+    "sort_order": 3
+  },
+  {
+    "id": "book00000000004",
+    "name": "Numbers",
+    "testament": "OT",
+    "sort_order": 4
+  },
+  {
+    "id": "book00000000005",
+    "name": "Deuteronomy",
+    "testament": "OT",
+    "sort_order": 5
+  },
+  {
+    "id": "book00000000006",
+    "name": "Joshua",
+    "testament": "OT",
+    "sort_order": 6
+  },
+  {
+    "id": "book00000000007",
+    "name": "Judges",
+    "testament": "OT",
+    "sort_order": 7
+  },
+  {
+    "id": "book00000000008",
+    "name": "Ruth",
+    "testament": "OT",
+    "sort_order": 8
+  },
+  {
+    "id": "book00000000009",
+    "name": "1 Samuel",
+    "testament": "OT",
+    "sort_order": 9
+  },
+  {
+    "id": "book00000000010",
+    "name": "2 Samuel",
+    "testament": "OT",
+    "sort_order": 10
+  },
+  {
+    "id": "book00000000011",
+    "name": "1 Kings",
+    "testament": "OT",
+    "sort_order": 11
+  },
+  {
+    "id": "book00000000012",
+    "name": "2 Kings",
+    "testament": "OT",
+    "sort_order": 12
+  },
+  {
+    "id": "book00000000013",
+    "name": "1 Chronicles",
+    "testament": "OT",
+    "sort_order": 13
+  },
+  {
+    "id": "book00000000014",
+    "name": "2 Chronicles",
+    "testament": "OT",
+    "sort_order": 14
+  },
+  {
+    "id": "book00000000015",
+    "name": "Ezra",
+    "testament": "OT",
+    "sort_order": 15
+  },
+  {
+    "id": "book00000000016",
+    "name": "Nehemiah",
+    "testament": "OT",
+    "sort_order": 16
+  },
+  {
+    "id": "book00000000017",
+    "name": "Esther",
+    "testament": "OT",
+    "sort_order": 17
+  },
+  {
+    "id": "book00000000018",
+    "name": "Job",
+    "testament": "OT",
+    "sort_order": 18
+  },
+  {
+    "id": "book00000000019",
+    "name": "Psalms",
+    "testament": "OT",
+    "sort_order": 19
+  },
+  {
+    "id": "book00000000020",
+    "name": "Proverbs",
+    "testament": "OT",
+    "sort_order": 20
+  },
+  {
+    "id": "book00000000021",
+    "name": "Ecclesiastes",
+    "testament": "OT",
+    "sort_order": 21
+  },
+  {
+    "id": "book00000000022",
+    "name": "Song",
+    "testament": "OT",
+    "sort_order": 22
+  },
+  {
+    "id": "book00000000023",
+    "name": "Isaiah",
+    "testament": "OT",
+    "sort_order": 23
+  },
+  {
+    "id": "book00000000024",
+    "name": "Jeremiah",
+    "testament": "OT",
+    "sort_order": 24
+  },
+  {
+    "id": "book00000000025",
+    "name": "Lamentations",
+    "testament": "OT",
+    "sort_order": 25
+  },
+  {
+    "id": "book00000000026",
+    "name": "Ezekiel",
+    "testament": "OT",
+    "sort_order": 26
+  },
+  {
+    "id": "book00000000027",
+    "name": "Daniel",
+    "testament": "OT",
+    "sort_order": 27
+  },
+  {
+    "id": "book00000000028",
+    "name": "Hosea",
+    "testament": "OT",
+    "sort_order": 28
+  },
+  {
+    "id": "book00000000029",
+    "name": "Joel",
+    "testament": "OT",
+    "sort_order": 29
+  },
+  {
+    "id": "book00000000030",
+    "name": "Amos",
+    "testament": "OT",
+    "sort_order": 30
+  },
+  {
+    "id": "book00000000031",
+    "name": "Obadiah",
+    "testament": "OT",
+    "sort_order": 31
+  },
+  {
+    "id": "book00000000032",
+    "name": "Jonah",
+    "testament": "OT",
+    "sort_order": 32
+  },
+  {
+    "id": "book00000000033",
+    "name": "Micah",
+    "testament": "OT",
+    "sort_order": 33
+  },
+  {
+    "id": "book00000000034",
+    "name": "Nahum",
+    "testament": "OT",
+    "sort_order": 34
+  },
+  {
+    "id": "book00000000035",
+    "name": "Habakkuk",
+    "testament": "OT",
+    "sort_order": 35
+  },
+  {
+    "id": "book00000000036",
+    "name": "Zephaniah",
+    "testament": "OT",
+    "sort_order": 36
+  },
+  {
+    "id": "book00000000037",
+    "name": "Haggai",
+    "testament": "OT",
+    "sort_order": 37
+  },
+  {
+    "id": "book00000000038",
+    "name": "Zechariah",
+    "testament": "OT",
+    "sort_order": 38
+  },
+  {
+    "id": "book00000000039",
+    "name": "Malachi",
+    "testament": "OT",
+    "sort_order": 39
+  },
+  {
+    "id": "book00000000040",
+    "name": "Matthew",
+    "testament": "NT",
+    "sort_order": 40
+  },
+  {
+    "id": "book00000000041",
+    "name": "Mark",
+    "testament": "NT",
+    "sort_order": 41
+  },
+  {
+    "id": "book00000000042",
+    "name": "Luke",
+    "testament": "NT",
+    "sort_order": 42
+  },
+  {
+    "id": "book00000000043",
+    "name": "John",
+    "testament": "NT",
+    "sort_order": 43
+  },
+  {
+    "id": "book00000000044",
+    "name": "Acts",
+    "testament": "NT",
+    "sort_order": 44
+  },
+  {
+    "id": "book00000000045",
+    "name": "Romans",
+    "testament": "NT",
+    "sort_order": 45
+  },
+  {
+    "id": "book00000000046",
+    "name": "1 Corinthians",
+    "testament": "NT",
+    "sort_order": 46
+  },
+  {
+    "id": "book00000000047",
+    "name": "2 Corinthians",
+    "testament": "NT",
+    "sort_order": 47
+  },
+  {
+    "id": "book00000000048",
+    "name": "Galatians",
+    "testament": "NT",
+    "sort_order": 48
+  },
+  {
+    "id": "book00000000049",
+    "name": "Ephesians",
+    "testament": "NT",
+    "sort_order": 49
+  },
+  {
+    "id": "book00000000050",
+    "name": "Philippians",
+    "testament": "NT",
+    "sort_order": 50
+  },
+  {
+    "id": "book00000000051",
+    "name": "Colossians",
+    "testament": "NT",
+    "sort_order": 51
+  },
+  {
+    "id": "book00000000052",
+    "name": "1 Thessalonians",
+    "testament": "NT",
+    "sort_order": 52
+  },
+  {
+    "id": "book00000000053",
+    "name": "2 Thessalonians",
+    "testament": "NT",
+    "sort_order": 53
+  },
+  {
+    "id": "book00000000054",
+    "name": "1 Timothy",
+    "testament": "NT",
+    "sort_order": 54
+  },
+  {
+    "id": "book00000000055",
+    "name": "2 Timothy",
+    "testament": "NT",
+    "sort_order": 55
+  },
+  {
+    "id": "book00000000056",
+    "name": "Titus",
+    "testament": "NT",
+    "sort_order": 56
+  },
+  {
+    "id": "book00000000057",
+    "name": "Philemon",
+    "testament": "NT",
+    "sort_order": 57
+  },
+  {
+    "id": "book00000000058",
+    "name": "Hebrews",
+    "testament": "NT",
+    "sort_order": 58
+  },
+  {
+    "id": "book00000000059",
+    "name": "James",
+    "testament": "NT",
+    "sort_order": 59
+  },
+  {
+    "id": "book00000000060",
+    "name": "1 Peter",
+    "testament": "NT",
+    "sort_order": 60
+  },
+  {
+    "id": "book00000000061",
+    "name": "2 Peter",
+    "testament": "NT",
+    "sort_order": 61
+  },
+  {
+    "id": "book00000000062",
+    "name": "1 John",
+    "testament": "NT",
+    "sort_order": 62
+  },
+  {
+    "id": "book00000000063",
+    "name": "2 John",
+    "testament": "NT",
+    "sort_order": 63
+  },
+  {
+    "id": "book00000000064",
+    "name": "3 John",
+    "testament": "NT",
+    "sort_order": 64
+  },
+  {
+    "id": "book00000000065",
+    "name": "Jude",
+    "testament": "NT",
+    "sort_order": 65
+  },
+  {
+    "id": "book00000000066",
+    "name": "Revelation",
+    "testament": "NT",
+    "sort_order": 66
+  }
+]
