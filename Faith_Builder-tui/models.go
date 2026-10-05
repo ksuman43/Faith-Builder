@@ -26,6 +26,13 @@ type Material struct {
     Expand    struct {
         Verses []Verse `json:"verses"`
     } `json:"expand,omitempty"`
+    
+type CrossReference struct {
+    ID          string `json:"id"`
+    SourceKey   string `json:"source_key"`
+    TargetKey   string `json:"target_key"`
+    Votes       int    `json:"votes"`
+}
 }
 
 // Material implements list.Item

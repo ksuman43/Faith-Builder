@@ -96,4 +96,21 @@ func linkVerseCmd(materialID, verseID, verseKey string) tea.Cmd {
         // Still passing it to verseLinkedMsg which expects verseRef
         return verseLinkedMsg{verseRef: verseKey}
     }
+    
+func FetchCrossReferences(verseKey string) ([]CrossReference, error) {
+    url := fmt.Sprintf("http://127.0.0.1:8090/api/collections/cross_references/records?filter=(source_key='%s')", verseKey)
+    resp, err := http.Get(url)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+
+    var result struct {
+        Items []CrossReference `json:"items"`
+    }
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return nil, err
+    }
+    return result.Items, nil
+}
 }

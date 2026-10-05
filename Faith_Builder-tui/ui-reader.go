@@ -49,3 +49,12 @@ func updateReadMaterial(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
     m.viewport, cmd = m.viewport.Update(msg)
     return m, cmd
 }
+
+s += "\n\n" + lipgloss.NewStyle().Bold(true).Render("Cross References:") + "\n"
+if len(m.currentXRefs) > 0 {
+    for _, xref := range m.currentXRefs {
+        s += fmt.Sprintf("• %s -> %s (Votes: %d)\n", xref.SourceKey, xref.TargetKey, xref.Votes)
+    }
+} else {
+    s += "No cross-references found for this material.\n"
+}

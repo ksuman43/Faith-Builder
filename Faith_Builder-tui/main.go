@@ -17,6 +17,7 @@ import (
 type model struct {
 	state sessionState
 	ready bool
+	currentXRefs []CrossReference
 
 	// Global State
 	err         error
